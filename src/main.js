@@ -26,6 +26,7 @@ firebase.initializeApp(firebaseConfig);
 // 変数にfirestoreを格納
 const db = firebase.firestore()
 
+// グローバル変数に格納
 window.db = db;
 
 new Vue({

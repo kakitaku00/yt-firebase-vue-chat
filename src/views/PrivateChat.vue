@@ -1,6 +1,9 @@
 <template>
   <div class="container">
-<h3 class=" text-center">Messaging</h3>
+<div class="titlebox">
+  <h3 class=" text-center">Messaging</h3>
+  <button class="logoutBtn" @click="logout">Logout</button>
+</div>
 <div class="messaging">
       <div class="inbox_msg">
         <div class="inbox_people">
@@ -92,10 +95,10 @@
         <div class="mesgs">
           <div class="msg_history">
             <div v-for="message in messages" :key="message.length" class="incoming_msg">
-              <div class="received_msg">
+              <div :class="[message.author === authUser.displayName?'sent_msg':'received_msg']">
                 <div class="received_withd_msg">
                   <p>{{ message.message }}</p>
-                  <span class="time_date"> 11:01 AM    |    June 9</span></div>
+                  <span class="time_date">{{ message.author }}</span></div>
               </div>
             </div>
           </div>
@@ -115,17 +118,23 @@
 </template>
 
 <script>
-// @ is an alias to /src
+import firebase from "firebase/app"
+require("firebase/auth");
 
 export default {
   name: "PrivateChat",
   data() {
     return {
       message: null,
-      messages: []
+      messages: [],
+      authUser: {}
     }
   },
   methods: {
+    scrollToBottom() {
+      let box = document.querySelector('.msg_history');
+      // box.scrollTop = box.scrollHeight;
+    },
     saveMessage() {
       // firestoreにdataを保存
       // chatコレクションにadd
@@ -134,7 +143,10 @@ export default {
         // dataプロパティのmessageをfiresotreのmessageフィールドに保存
         message: this.message,
         // タイムスタンプ
-        createdAt: new Date()
+        createdAt: new Date(),
+        author: this.authUser.displayName
+      }).then(() => {
+        this.scrollToBottom();
       })
       this.message = null;
     },
@@ -150,11 +162,48 @@ export default {
           allMessages.push(doc.data())
         });
         this.messages = allMessages;
+
+        setTimeout(() => {
+          this.scrollToBottom();
+        }, 1000)
       })
+    },
+    logout() {
+      firebase.auth().signOut().then(()=>{
+        console.log("ログアウトしました");
+      })
+      .catch( (error)=>{
+        console.log(error);
+      });
     }
   },
   created() {
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        this.authUser = user;
+      } else {
+        this.authUser = {}
+      }
+    })
+
     this.fetchMessages();
+  },
+  beforeRouteEnter(to, from, next) {
+    // 以下Vue Router公式ドキュメント
+    // このコンポーネントを描画するルートが確立する前に呼ばれます。
+    // `this` でのこのコンポーネントへのアクセスはできません。
+    // なぜならばこのガードが呼び出される時にまだ作られていないからです!
+    next(vm => {
+      firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+          // ユーザーログインが完了していたら次の処理へ => コンポーネントの作成へ
+          next();
+        } else {
+          // ログインしていない場合はログイン画面へ
+          vm.$router.push("/login")
+        }
+      })
+    })
   }
 }
 </script>
@@ -227,10 +276,10 @@ img{ max-width:100%;}
   width: 6%;
 }
 .received_msg {
-  display: inline-block;
+  /* display: inline-block;
   padding: 0 0 0 10px;
   vertical-align: top;
-  width: 92%;
+  width: 92%; */
  }
  .received_withd_msg p {
   background: #ebebeb none repeat scroll 0 0;
@@ -264,8 +313,10 @@ img{ max-width:100%;}
 }
 .outgoing_msg{ overflow:hidden; margin:26px 0 26px;}
 .sent_msg {
-  float: right;
-  width: 46%;
+  display: flex;
+  justify-content: flex-end;
+  /* float: right; */
+  /* width: 46%; */
 }
 .input_msg_write input {
   background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
@@ -294,5 +345,17 @@ img{ max-width:100%;}
 .msg_history {
   height: 516px;
   overflow-y: auto;
+}
+
+.titlebox {
+  position: relative;
+}
+
+.logoutBtn {
+  position: absolute;
+  right: 10px;
+  top: 0;
+  bottom: 0;
+  margin: auto;
 }
 </style>

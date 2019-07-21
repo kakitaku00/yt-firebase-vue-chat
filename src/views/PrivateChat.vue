@@ -91,7 +91,7 @@
         </div>
         <div class="mesgs">
           <div class="msg_history">
-            <div v-for="message in messages" class="incoming_msg">
+            <div v-for="message in messages" :key="message.length" class="incoming_msg">
               <div class="received_msg">
                 <div class="received_withd_msg">
                   <p>{{ message.message }}</p>
